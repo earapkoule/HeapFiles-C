@@ -1,12 +1,7 @@
 #ifndef HEAP_FILE_H
 #define HEAP_FILE_H
 
-typedef struct Record {
-	int id;
-	char name[15];
-	char surname[25];
-	char address[50];
-} Record;
+#include "record_struct.h"
 
 typedef struct HP_info {
   int fileDesc;		/* αναγνωριστικός αριθμός ανοίγματος αρχείου από το επίπεδο block */
