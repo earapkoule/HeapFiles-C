@@ -15,7 +15,6 @@ int HP_CreateFile(
 	char attrType,	/* τύπος πεδίου-κλειδιού: 'c', 'i' */
 	char *attrName, /* όνομα πεδίου-κλειδιού */
 	int attrLength,	/* μήκος πεδίου-κλειδιού */
-	int buckets		/* αριθμός κάδων κατακερματισμού*/
 	);
 
 HP_info* HP_OpenFile(
