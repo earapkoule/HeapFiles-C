@@ -5,18 +5,33 @@
 #include "BF.h"
 #include "heap_file.h"
 #include "record_struct.h"
+#include "error_messages.h"
 
-#define CALL_BF(call)       \
-{                           \
-  BF_ErrorCode code = call; \
-  if (code != BF_OK) {      \
-    BF_PrintError(code);    \
-    return HP_ERROR;        \
-  }                         \
-}
+/* The first block of a heap file looks like this:
+ * --------------------------------------------------
+ * | % | attrType | attrName | \0 | 0 | 0 | 0 | ... |
+ * --------------------------------------------------
+ * In index 0: char '%' identifies a heap file
+ * In index 1: char attrType ( 'c' or 'i' ) is the type of the key
+ * In indexes 2 - 2 + attrLength: the attrName character by character and char '\0' as well
+ * In indexes 2 + attrLength + 1: filled with 0
+ */
 
 int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength) {
+  int fileDesc;
+  void *block;
 
+  CALL_BF(BF_CreateFile(fileName)); // Creating a file
+  CALL_BF(BF_OpenFile(fileName)); // Opening existing file
+  CALL_BF(BF_AllocateBlock(fileDesc)); // Allocating a block, the first one in this case
+  CALL_BF(BF_ReadBlock(fileDesc, 0, &block));
+  block[0] = '%'; // Used to identify the heap file
+  block[1] = attrType;
+  memcpy(block + 2, attrName, attrLength);
+  block[2 + attrLength] = '\0';
+  CALL_BF(BF_WriteBlock(fileDesc, 0));
+  CALL_BF(BF_CloseFile(fileDesc));
+  return OK;
 }
 
 HP_info* HP_OpenFile(char *fileName) {
