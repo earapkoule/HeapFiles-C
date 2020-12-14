@@ -58,28 +58,6 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
 
 
 
-
-
-HP_ErrorCode HP_CreateFile(const char *filename) {
-  int index, file_desc;
-  char* block_data;
-  BF_Block *block;
-
-  BF_Block_Init(&block); //Init and allocating mem for the block
-  CALL_BF(BF_CreateFile(filename)); //Creating a file
-  CALL_BF(BF_OpenFile(filename, &file_desc)); //Opening existing file
-  CALL_BF(BF_AllocateBlock(file_desc, block)); //Allocating a block, the first one in this case
-  block_data = BF_Block_GetData(block);
-  for(index = 0; index < BF_BLOCK_SIZE; index++){
-    block_data[index] = '%';
-  } //Is a HeapFile only if its first block is filled with '%'
-  BF_Block_SetDirty(block); //File was changed
-  CALL_BF(BF_UnpinBlock(block));
-  BF_Block_Destroy(&block); //Free mem
-  CALL_BF(BF_CloseFile(file_desc));
-  return HP_OK;
-}
-
 HP_ErrorCode HP_OpenFile(const char *fileName, int *fileDesc){
   int index;
   char* block_data;
