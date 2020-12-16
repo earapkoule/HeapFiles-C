@@ -9,49 +9,66 @@
 
 /* The first block of a heap file looks like this:
  * --------------------------------------------------
- * | % | attrType | attrName | \0 | 0 | 0 | 0 | ... |
+ * | % | attrType | attrLength | attrName | \0 | 0 | 0 | ... |
  * --------------------------------------------------
  * In index 0: char '%' identifies a heap file
  * In index 1: char attrType ( 'c' or 'i' ) is the type of the key
- * In indexes 2 - 2 + attrLength: the attrName character by character and char '\0' as well
- * In indexes 2 + attrLength + 1: filled with 0
+ * In index 2: attrLength
+ * In indexes from 2 + sizeof(int) to 2 + sizeof(int) + attrLength + 1: the attrName character by character and char '\0' as well
+ * In indexes from 2 + sizeof(int) + attrLength + 1 + to BLOCK_SIZE: filled with 0
  */
 
 int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength) {
-  int fileDesc;
-  void *block;
+  char *block;
 
   CALL_BF(BF_CreateFile(fileName)); // Creating a file
-  CALL_BF(BF_OpenFile(fileName)); // Opening existing file
+  int fileDesc = CALL_BF(BF_OpenFile(fileName)); // Opening existing file
   CALL_BF(BF_AllocateBlock(fileDesc)); // Allocating a block, the first one in this case
-  CALL_BF(BF_ReadBlock(fileDesc, 0, &block));
-  block[0] = '%'; // Used to identify the heap file
-  block[1] = attrType;
-  memcpy(block + 2, attrName, attrLength);
-  block[2 + attrLength] = '\0';
+  CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &block));
+  char identifier = '%';
+  memcpy(block, &identifier, sizeof(char)); // Used to identify the heap file
+  memcpy(block + 1, &attrType, sizeof(char));
+  memcpy(block + 2, &attrLength, sizeof(int)); 
+  memcpy(block + (2 + sizeof(int)), attrName, attrLength + 1);
   CALL_BF(BF_WriteBlock(fileDesc, 0));
   CALL_BF(BF_CloseFile(fileDesc));
   return OK;
 }
 
 HP_info* HP_OpenFile(char *fileName) {
+  void *block;
+  HP_info *header_info = malloc(sizeof(HP_info));
 
+  // !!!-MUST CHANGE CALL_BF TO RETURN NULL FOR THIS CALL-!!! //
+  int fileDesc = CALL_BF(BF_OpenFile(fileName)); // Opening existing file
+  CALL_BF(BF_ReadBlock(fileDesc, 0, &block));
+  if ( block[0] != '%' ) { // Check if it is a HeapFile
+    free(header_info); // Free memory in case the file does not open
+    return NULL;
+  } else {
+    header_info->fileDesc = fileDesc;
+    memcpy(header_info->attrType, block + 1, 1); 
+    memcpy(header_info->attrLength, block + 2, sizeof(int));
+    memcpy(header_info->attrName, block + (2 + sizeof(int)), header_info->attrLength);
+  }
+  return HP_info;
 }
 
 int HP_CloseFile(HP_info* header_info) {
-
+  free(header_info); // Free memory before closing the file
+  return OK;
 }
 
 int HP_InsertEntry(HP_info header_info, Record record) {
-
+  return OK;
 }
 
 int HP_DeleteEntry(HP_info header_info, void *value) {
-
+  return OK;
 }
 
 int HP_GetAllEntries(HP_info header_info, void *value) {
-
+  return OK;
 }
 
 
