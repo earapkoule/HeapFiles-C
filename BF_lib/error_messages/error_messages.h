@@ -150,4 +150,148 @@
   }                         					\
 }
 
+#define CALL_OR_RETURN_NULL(call)               \
+{                                               \
+  if (call < BFE_OK) {                          \
+    if(BF_Errno == BFE_NOMEM) {                 \
+        BF_PrintError(                          \
+            "NOMEM"                             \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_CANNOTOPENFILE) {        \
+        BF_PrintError(                          \
+            "CANNOTOPENFILE"                    \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_CANNOTCLOSEFILE) {       \
+        BF_PrintError(                          \
+            "CANNOTCLOSEFILE"                   \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_CANNOTCREATEFILE) {      \
+        BF_PrintError(                          \
+            "CANNOTCREATEFILE"                  \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_INCOMPLETEREAD) {        \
+        BF_PrintError(                          \
+            "INCOMPLETEREAD"                    \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_INCOMPLETEWRITE) {       \
+        BF_PrintError(                          \
+            "INCOMPLETEWRITE"                   \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FILEEXISTS) {            \
+        BF_PrintError(                          \
+            "FILEEXISTS"                        \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_NOBUF) {                 \
+        BF_PrintError(                          \
+            "NOBUF"                             \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_LISTERROR) {             \
+        BF_PrintError(                          \
+            "LISTERROR"                         \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FILEOPEN) {              \
+        BF_PrintError(                          \
+            "FILEOPEN"                          \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FD) {                    \
+        BF_PrintError(                          \
+            "FD"                                \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FILENOTEXISTS) {         \
+        BF_PrintError(                          \
+            "FILENOTEXISTS"                     \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FTABFULL) {              \
+        BF_PrintError(                          \
+            "FTABFULL"                          \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_HEADOVERFLOW) {          \
+        BF_PrintError(                          \
+            "HEADOVERFLOW"                      \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_BLOCKFIXED) {            \
+        BF_PrintError(                          \
+            "BLOCKFIXED"                        \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_BLOCKUNFIXED) {          \
+        BF_PrintError(                          \
+            "BLOCKUNFIXED"                      \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_EOF) {                   \
+        BF_PrintError(                          \
+            "EOF"                               \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_FILEHASFIXEDBLOCKS) {    \
+        BF_PrintError(                          \
+            "FILEHASFIXEDBLOCKS"                \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_BLOCKFREE) {             \
+        BF_PrintError(                          \
+            "BLOCKFREE"                         \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_BLOCKINBUF) {            \
+        BF_PrintError(                          \
+            "BLOCKINBUF"                        \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_BLOCKNOTINBUF) {         \
+        BF_PrintError(                          \
+            "BLOCKNOTINBUF"                     \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_INVALIDBLOCK) {          \
+        BF_PrintError(                          \
+            "INVALIDBLOCK"                      \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+    if(BF_Errno == BFE_CANNOTDESTROYFILE) {     \
+        BF_PrintError(                          \
+            "CANNOTDESTROYFILE"                 \
+        );                                      \
+        return NULL;                            \
+    }                                           \
+  }                                             \
+}
+
 #endif // ERROR_MESSAGES_H
