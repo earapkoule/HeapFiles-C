@@ -39,9 +39,8 @@ HP_info* HP_OpenFile(char *fileName) {
   void *block;
   HP_info *header_info = malloc(sizeof(HP_info));
 
-  // !!!-MUST CHANGE CALL_BF TO RETURN NULL FOR THIS CALL-!!! //
-  int fileDesc = CALL_BF(BF_OpenFile(fileName)); // Opening existing file
-  CALL_BF(BF_ReadBlock(fileDesc, 0, &block));
+  int fileDesc = CALL_OR_RETURN_NULL(BF_OpenFile(fileName)); // Opening existing file
+  CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, &block));
   if ( block[0] != '%' ) { // Check if it is a HeapFile
     free(header_info); // Free memory in case the file does not open
     return NULL;
