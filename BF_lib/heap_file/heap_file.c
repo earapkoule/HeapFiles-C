@@ -54,6 +54,7 @@ HP_info* HP_OpenFile(char *fileName) {
 }
 
 int HP_CloseFile(HP_info* header_info) {
+  CALL_BF(BF_CloseFile(header_info->fileDesc));
   free(header_info); // Free memory before closing the file
   return OK;
 }
