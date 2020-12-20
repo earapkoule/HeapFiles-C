@@ -7,6 +7,8 @@
 #include "record_struct.h"
 #include "error_messages.h"
 
+#define MAX_RECORDS (BLOCK_SIZE - sizeof(int)) / sizeof(Record)
+
 /* The first block of a heap file looks like this:
  * --------------------------------------------------
  * | % | attrType | attrLength | attrName | \0 | 0 | 0 | ... |
@@ -19,7 +21,7 @@
  */
 
 int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength) {
-  char *block;
+  char *block; // Initialize it to type char, so that block + 1 means "move 1 index"
 
   CALL_BF(BF_CreateFile(fileName)); // Creating a file
   int fileDesc = CALL_BF(BF_OpenFile(fileName)); // Opening existing file
@@ -36,12 +38,12 @@ int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength)
 }
 
 HP_info* HP_OpenFile(char *fileName) {
-  void *block;
+  char *block;
   HP_info *header_info = malloc(sizeof(HP_info));
 
   int fileDesc = CALL_OR_RETURN_NULL(BF_OpenFile(fileName)); // Opening existing file
-  CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, &block));
-  if ( block[0] != '%' ) { // Check if it is a HeapFile
+  CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void**) &block));
+  if ( !strcmp(block[0], '%') ) { // Check if it is a HeapFile
     free(header_info); // Free memory in case the file does not open
     return NULL;
   } else {
@@ -59,10 +61,53 @@ int HP_CloseFile(HP_info* header_info) {
   return OK;
 }
 
+/* Records cannot be stored in the first block. It is used only for the heap file info.
+ * Record blocks look like:
+ * ------------------------------------------------
+ * | num of records (int) | Record | Record | ... |
+ * ------------------------------------------------
+ */
+
+// Inserts the record to the end of the file, no matter if there are available indexes in the middle of the file
 int HP_InsertEntry(HP_info header_info, Record record) {
+  char *block;
+  int num_of_records;
+
+  int fileDesc = header_info.fileDesc;
+  char *fileΝame = header_info.fileName;
+  CALL_BF(BF_OpenFile(fileΝame));
+
+  int num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
+
+  if (num_of_blocks == 1) { // There is only the block that contains heaap file info
+    CALL_BF(BF_AllocateBlock(fileDesc));
+    CALL_BF(BF_ReadBlock(fileDesc, 1, (void**) &block); // Blocks' numbering starts on 0
+    
+    num_of_records = 1;
+    memcpy(block, &num_of_records, sizeof(int));
+    memcpy(block + sizeof(int), &record, sizeof(Record));
+  } else {
+    CALL_BF(BF_ReadBlock(fileDesc, num_of_blocks - 1, (void**) &block);
+    memcpy(&num_of_records, block, sizeof(int));
+    if (num_of_records < MAX_RECORDS) { // There is space for a record in the same block
+      num_of_records += 1;
+      memcpy(block, &num_of_records, sizeof(int)); // Increase the number of records
+      block = block + (num_of_records * sizeof(Record)); // Move the index to the end of the block
+      memcpy(block, &record, sizeof(Record)); // Add the new record
+    } else { // There is not enough space for a record in this block
+      CALL_BF(BF_AllocateBlock(fileDesc)); // Allocate a new block
+      num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
+      CALL_BF(BF_ReadBlock(fileDesc, num_of_blocks - 1, (void**) &block);
+      
+      num_of_records = 1;
+      memcpy(block, &num_of_records, sizeof(int));
+      memcpy(block + sizeof(int), &record, sizeof(Record));
+    }
+  }
   return OK;
 }
 
+// Deletes the record that 
 int HP_DeleteEntry(HP_info header_info, void *value) {
   return OK;
 }
@@ -73,78 +118,6 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
 
 
 
-
-
-HP_ErrorCode HP_OpenFile(const char *fileName, int *fileDesc){
-  int index;
-  char* block_data;
-  BF_Block *block;
-  BF_Block_Init(&block);
-
-  CALL_BF(BF_OpenFile(fileName, fileDesc));
-  CALL_BF(BF_GetBlock(*fileDesc, 0, block));
-  block_data = BF_Block_GetData(block);
-  for(index = 0; index < BF_BLOCK_SIZE; index++){
-    if(block_data[index] != '%'){ //Check if it is a HeapFile
-      return HP_ERROR;
-    }
-  }
-  CALL_BF(BF_UnpinBlock(block));
-  BF_Block_Destroy(&block);
-  return HP_OK;
-}
-
-HP_ErrorCode HP_CloseFile(int fileDesc) {
-  CALL_BF(BF_CloseFile(fileDesc));
-  return HP_OK;
-}
-
-HP_ErrorCode HP_InsertEntry(int fileDesc, Record record) {
-  int blocks_num;
-  BF_Block *block;
-  BF_Block_Init(&block);
-  char *block_data, *block_data_start;
-  int records_num;
-
-  CALL_BF(BF_GetBlockCounter(fileDesc, &blocks_num));
-
-  if(blocks_num == 1){ //It has only the block that contains "special" info
-    CALL_BF(BF_AllocateBlock(fileDesc, block));
-    block_data = BF_Block_GetData(block);
-    records_num = 1;
-    memcpy(block_data, &records_num, 4);
-    block_data = block_data + 4;
-    memcpy(block_data, &record, sizeof(Record));
-    BF_Block_SetDirty(block);
-    CALL_BF(BF_UnpinBlock(block));
-  }else{
-    CALL_BF(BF_GetBlock(fileDesc, blocks_num - 1, block));
-    block_data = BF_Block_GetData(block);
-    block_data_start = block_data;
-    memcpy(&records_num, block_data, 4);
-    block_data = block_data + 4;
-    if(records_num < (BF_BLOCK_SIZE - 4)/sizeof(Record)){ //There is space for a record in the same block
-      block_data = block_data + (records_num * sizeof(Record));
-      memcpy(block_data, &record, sizeof(Record));
-      records_num += 1;
-      memcpy(block_data_start, &records_num, 4);
-      BF_Block_SetDirty(block);
-      CALL_BF(BF_UnpinBlock(block));
-    }else{
-      CALL_BF(BF_UnpinBlock(block));
-      CALL_BF(BF_AllocateBlock(fileDesc, block));
-      block_data = BF_Block_GetData(block);
-      records_num = 1;
-      memcpy(block_data, &records_num, 4);
-      block_data = block_data + 4;
-      memcpy(block_data, &record, sizeof(Record));
-      BF_Block_SetDirty(block);
-      CALL_BF(BF_UnpinBlock(block));
-    }
-  }
-  BF_Block_Destroy(&block);
-  return HP_OK;
-}
 
 HP_ErrorCode HP_PrintAllEntries(int fileDesc, char *attrName, void* value) {
   int blocks_num, index1, index2;
