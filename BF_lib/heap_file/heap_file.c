@@ -74,8 +74,6 @@ int HP_InsertEntry(HP_info header_info, Record record) {
   int num_of_records;
 
   int fileDesc = header_info.fileDesc;
-  char *fileΝame = header_info.fileName;
-  CALL_BF(BF_OpenFile(fileΝame));
 
   int num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
 
@@ -86,14 +84,14 @@ int HP_InsertEntry(HP_info header_info, Record record) {
     num_of_records = 1;
     memcpy(block, &num_of_records, sizeof(int));
     memcpy(block + sizeof(int), &record, sizeof(Record));
+    CALL_BF(BF_WriteBlock(fileDesc, 1));
   } else {
     CALL_BF(BF_ReadBlock(fileDesc, num_of_blocks - 1, (void**) &block);
     memcpy(&num_of_records, block, sizeof(int));
     if (num_of_records < MAX_RECORDS) { // There is space for a record in the same block
       num_of_records += 1;
       memcpy(block, &num_of_records, sizeof(int)); // Increase the number of records
-      block = block + (num_of_records * sizeof(Record)); // Move the index to the end of the block
-      memcpy(block, &record, sizeof(Record)); // Add the new record
+      memcpy(block + sizeof(int) + (num_of_records * sizeof(Record)), &record, sizeof(Record)); // Add the new record
     } else { // There is not enough space for a record in this block
       CALL_BF(BF_AllocateBlock(fileDesc)); // Allocate a new block
       num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
@@ -103,6 +101,7 @@ int HP_InsertEntry(HP_info header_info, Record record) {
       memcpy(block, &num_of_records, sizeof(int));
       memcpy(block + sizeof(int), &record, sizeof(Record));
     }
+    CALL_BF(BF_WriteBlock(fileDesc, num_of_blocks - 1));
   }
   return OK;
 }
@@ -113,6 +112,71 @@ int HP_DeleteEntry(HP_info header_info, void *value) {
 }
 
 int HP_GetAllEntries(HP_info header_info, void *value) {
+  char *block;
+  int num_of_records;
+  Record *record;
+  
+  int *int_value;
+
+  int num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
+  if ( value == NULL ) {
+    for ( int index = 1; index < num_of_blocks; index++ ) {
+      CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
+      memcpy(&num_of_records, block, sizeof(int));
+      record = (Record*) (block + sizeof(int));
+      for ( int i = 0; i < num_of_records; i++ ) {
+        printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
+      }
+    }
+  } else if ( !strcmp(header_info.attrName, "id") ) {
+    int_value = (int*) value;
+    for ( int index = 1; index < num_of_blocks; index++ ) {
+      CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
+      memcpy(&num_of_records, block, sizeof(int));
+      record = (Record*) (block + 4);
+      for ( int i = 0; i < num_of_records; i++ ) {
+        if ( record[i].id == *int_value ) {
+          printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
+        }
+      }
+    }
+  } else if ( !strcmp(header_info.attrName, "name") ) {
+    value = (char*) value;
+    for ( int index = 1; index < num_of_blocks; index++ ) {
+      CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
+      memcpy(&num_of_records, block, sizeof(int));
+      record = (Record*) (block + sizeof(int));
+      for ( int i = 0; i < num_of_records; i++ ) {
+        if ( !strcmp(record[i].name, value) ) {
+          printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
+        }
+      }
+    }
+  } else if ( !strcmp(header_info.attrName, "surname") ) {
+    value = (char*) value;
+    for ( int index = 1; index < num_of_blocks; index++ ) {
+      CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
+      memcpy(&num_of_records, block, sizeof(int));
+      record = (Record*) (block + sizeof(int));
+      for ( int i = 0; i < num_of_records; i++ ) {
+        if ( !strcmp(record[i].surname, value) ) {
+          printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
+        }
+      }
+    }
+  } else if ( !strcmp(header_info.attrName, "address") ) {
+    value = (char*) value;
+    for ( int index = 1; index < num_of_blocks; index++ ) {
+      CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
+      memcpy(&num_of_records, block, sizeof(int));
+      record = (Record*) (block + sizeof(int));
+      for ( int i = 0; i < num_of_records; i++ ) {
+        if ( !strcmp(record[i].address, value) ) {
+          printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].city);
+        }
+      }
+    }
+  }
   return OK;
 }
 
@@ -228,5 +292,4 @@ HP_ErrorCode HP_GetEntry(int fileDesc, int rowId, Record *record) {
   CALL_BF(BF_UnpinBlock(block));
   BF_Block_Destroy(&block);
   return HP_OK;
-
 }
