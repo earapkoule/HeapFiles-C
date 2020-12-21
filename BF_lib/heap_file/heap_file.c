@@ -23,6 +23,8 @@
 int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength) {
   char *block; // Initialize it to type char, so that block + 1 means "move 1 index"
 
+  BF_Init();
+
   CALL_BF(BF_CreateFile(fileName)); // Creating a file
   int fileDesc = CALL_BF(BF_OpenFile(fileName)); // Opening existing file
   CALL_BF(BF_AllocateBlock(fileDesc)); // Allocating a block, the first one in this case
@@ -43,7 +45,7 @@ HP_info* HP_OpenFile(char *fileName) {
 
   int fileDesc = CALL_OR_RETURN_NULL(BF_OpenFile(fileName)); // Opening existing file
   CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void**) &block));
-  if ( !strcmp(block[0], '%') ) { // Check if it is a HeapFile
+  if ( strcmp(block[0], '%') ) { // Check if it is a HeapFile
     free(header_info); // Free memory in case the file does not open
     return NULL;
   } else {
