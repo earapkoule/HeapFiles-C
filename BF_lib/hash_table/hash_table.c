@@ -45,14 +45,15 @@ int HT_CreateIndex(char *fileName, char attrType, char *attrName, int attrLength
         CALL_BF((BF_ReadBlock(fileDesc, num_hash_blocks + 1, (void **)&hash_block)));
         for (i = 0; i < BLOCK_SIZE / sizeof(int); i++)
         {
-            //hash_block_data[i] = -1;
+            memcpy(hash_block + (i * sizeof(int)), -1, sizeof(int));
         }
-        CALL_BF(BF_WriteBlock(fileDesc, num_hash_blocks + 1));
+        CALL_BF(BF_WriteBlock(fileDesc, hash_block));
     }
     CALL_BF(BF_CloseFile(fileDesc));
 
     return OK;
 }
+
 HT_info *HT_OpenIndex(char *fileName)
 {
     char *block;
@@ -85,15 +86,99 @@ int HT_CloseIndex(HT_info *header_info)
 
 int HT_InsertEntry(HT_info header_info, Record record)
 {
-    char *hash_block;
+    char *hash_info_block;
     int num_of_records;
 
     int fileDesc = header_info.fileDesc;
+    CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block);
+    int buckets = hash_info_block[4];
+
+
+    int hash_value = record.id % buckets;
+    int hash_block_num = (hash_value / 128) + 2;
+    int hash_bucket_num = hash_value % 128;
+
+    char *hash_block;
+
+    CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void**) &hash_block);
+
+    int records_num;
+
+    char *block_of_records;
+    if (hash_block[hash_bucket_num] == -1)
+    {
+        int blocks_num;
+        CALL_BF(BF_GetBlockCounter(fileDesc, &blocks_num));
+        CALL_BF(BF_AllocateBlock(fileDesc);
+        CALL_BF(BF_ReadBlock(fileDesc, blocks_num+1, (void**) &block_of_records);
+
+        records_num = 1;
+        memcpy(block_of_records, &records_num, sizeof(int));
+        block_of_records = block_of_records + 1;
+        int next_block = -1;
+        memcpy(block_of_records, &next_block, sizeof(int)); /*setting the last 4bytes to -1, to indicate that there is no next block*/
+        block_of_records = block_of_records + 1;
+        memcpy(block_of_records, &record, sizeof(Record));
+
+        CALL_BF(BF_GetBlockCounter(fileDesc, &blocks_num));
+        hash_block[hash_bucket_num] = blocks_num - 1;
+
+        CALL_BF(BF_WriteBlock(fileDesc, blocks_num));
+        CALL_BF(BF_WriteBlock(fileDesc, hash_block_num));
+    }
+    else
+    {
+        CALL_BF(BF_ReadBlock(fileDesc, hash_block[hash_bucket_num], (void**) &block_of_records);
+        int block_num = block_of_records[1];
+
+        while (block_num != -1)
+        {
+            CALL_BF(BF_ReadBlock(fileDesc, block_num, (void**) &block_of_records);
+            block_num = block_of_records[1];
+        }
+
+        int max_records_in_block = (BLOCK_SIZE - (2 * sizeof(int))) / sizeof(Record);
+        int records_num = block_of_records[0];
+        if (records_num == max_records_in_block)
+        {
+            int blocks_num;
+            CALL_BF(BF_GetBlockCounter(fileDesc, &blocks_num));
+
+            memcpy(block_of_records + sizeof(int), &blocks_num, sizeof(int));
+            CALL_BF(BF_WriteBlock(fileDesc, block_num));
+
+            CALL_BF(BF_AllocateBlock(fileDesc);
+            CALL_BF(BF_ReadBlock(fileDesc, block_num+1, (void**) &block_of_records);
+            int one=1;
+            int minus=-1;
+            memcpy(block_of_records, &one, sizeof(int));
+            memcpy(block_of_records+sizeof(int), &minus, sizeof(int));
+
+            memcpy(block_of_records+(2*sizeof(int)), &record, sizeof(Record));
+
+            CALL_BF(BF_WriteBlock(fileDesc, block_num+1));
+        }
+        else
+        {
+            int one = block_of_records[0] + 1;
+            memcpy(block_of_records, &one, sizeof(int));
+            block_of_records = block_of_records + (2 * sizeof(int));
+            block_of_records = (int *)((Record *)(block_of_records) + records_num);
+            memcpy(block_of_records_data, &record, sizeof(Record));
+
+            CALL_BF(BF_WriteBlock(fileDesc, block_num));
+        }
+    }
+
+
+    CALL_BF(BF_WriteBlock(fileDesc, hash_block_num));
+
+    return OK;
 }
 
 int HT_DeleteEntry(HT_info header_info, void *value)
 {
-    return -1;
+    return ERROR;
 }
 
 int HT_GetAllEntries(HT_info header_info, void *value)
@@ -106,9 +191,14 @@ int HT_GetAllEntries(HT_info header_info, void *value)
     int *int_value;
     int fileDesc = header_info.fileDesc;
     int num_of_blocks = CALL_BF(BF_GetBlockCounter(fileDesc));
+
+    CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
+    buckets = block[5];
+    int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
+
     if (value == NULL)
     {
-        for (int index = 1; index < num_of_blocks; index++)
+        for (int index = num_hash_blocks + 1; index < num_of_blocks; index++)
         {
             CALL_BF(BF_ReadBlock(fileDesc, index, (void **)&block));
             memcpy(&num_of_records, block, sizeof(int));
@@ -122,16 +212,11 @@ int HT_GetAllEntries(HT_info header_info, void *value)
     else
     {
         int_value = (int *)value;
-        CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
-        buckets=block[5];
 
-        
         int hash_value = *int_value % buckets;
         int hash_block_num = (hash_value / 128) + 1;
         int hash_bucket_num = hash_value % 128;
         CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **)&block));
-
-        //??
         memcpy(&num_of_records, block, sizeof(int));
         record = (Record *)(block + 4);
         for (int i = 0; i < num_of_records; i++)
@@ -142,9 +227,10 @@ int HT_GetAllEntries(HT_info header_info, void *value)
             }
         }
     }
+    return OK;
 }
 
 int HashStatistics(char *filename)
 {
-    return -1;
+ return ERROR;
 }
