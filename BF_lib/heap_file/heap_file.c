@@ -42,23 +42,23 @@ int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength)
 HP_info* HP_OpenFile(char *fileName) {
   char *block;
 
-  HP_info *header_info = malloc(sizeof(HP_info));
   int fileDesc = BF_OpenFile(fileName); // Opening existing file
   CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void**) &block));
   if ( block[0] != '%' ) { // Check if it is a HeapFile
-    free(header_info); // Free memory in case the file does not open
     return NULL;
-  } else {
-    header_info->fileDesc = fileDesc;
-    memcpy(&header_info->attrType, block + 1, 1);
-    memcpy(&header_info->attrLength, block + 2, sizeof(int));
-    memcpy(&header_info->attrName, block + (2 + sizeof(int)), header_info->attrLength);
   }
+  HP_info *header_info = malloc(sizeof(HP_info));
+  header_info->fileDesc = fileDesc;
+  memcpy(&(header_info->attrType), block + 1, 1);
+  memcpy(&(header_info->attrLength), block + 2, sizeof(int));
+  header_info->attrName = malloc(header_info->attrLength + 1);
+  memcpy(header_info->attrName, block + (2 + sizeof(int)), (header_info->attrLength + 1));
   return header_info;
 }
 
 int HP_CloseFile(HP_info* header_info) {
   CALL_BF(BF_CloseFile(header_info->fileDesc));
+  free(header_info->attrName);
   free(header_info); // Free memory before closing the file
   return OK;
 }
@@ -130,7 +130,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
       }
     }
-  } else if ( !strcmp(&header_info.attrName, "id") ) {
+  } else if ( !strcmp(header_info.attrName, "id") ) {
     int_value = (int*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
@@ -142,7 +142,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         }
       }
     }
-  } else if ( !strcmp(&header_info.attrName, "name") ) {
+  } else if ( !strcmp(header_info.attrName, "name") ) {
     value = (char*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
@@ -154,7 +154,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         }
       }
     }
-  } else if ( !strcmp(&header_info.attrName, "surname") ) {
+  } else if ( !strcmp(header_info.attrName, "surname") ) {
     value = (char*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));

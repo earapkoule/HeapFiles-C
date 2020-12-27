@@ -1,4 +1,4 @@
-CFLAGS = BF_64.a -no-pie
+CFLAGS = -Wall BF_64.a -no-pie
 
 ODIR = ./obj
 
