@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../BF.h"
-#include "../hash_table/hash_table.h"
+#include "BF.h"
+#include "hash_table.h"
 
 #define FILENAME "file"
 #define MAX_FILES 100
@@ -58,11 +58,10 @@ int main(int argc, char **argv)
     void *block;
     int blkCnt;
     HT_info *ht_pointer;
-    BF_Init();
     strcpy(filename, FILENAME);
 
-    CALL_BF(HT_CreateIndex(filename, 'c', 'id', strlen('id'), BUCKETS_NUM));
-    ht_pointer=CALL_BF(HT_OpenIndex(filename));
+    HT_CreateIndex(filename, 'c', "id", strlen("id"), BUCKETS_NUM);
+    ht_pointer=HT_OpenIndex(filename);
     Record record;
     srand(12569874);
     int r;
@@ -77,19 +76,18 @@ int main(int argc, char **argv)
         r = rand() % 10;
         memcpy(record.address, addresses[r], strlen(addresses[r]) + 1);
 
-        CALL_OR_DIE(HT_InsertEntry(*ht_pointer, record));
+        HT_InsertEntry(*ht_pointer, record);
     }
 
     printf("RUN PrintAllEntries\n");
     int id = rand() % RECORDS_NUM;
-    CALL_OR_DIE(HT_GetAllEntries(*ht_pointer,NULL));
+    HT_GetAllEntries(*ht_pointer,NULL);
 
     printf("Delete Entry with id = %d\n", id);
     //CALL_OR_DIE(HT_DeleteEntry(indexDesc, id));
     printf("Print Entry with id = %d\n", id);
-    CALL_OR_DIE(HT_GetAllEntries(*ht_pointer,&id)); // must print something like : Entry doesn't exist or nothing at all
+    HT_GetAllEntries(*ht_pointer,&id); // must print something like : Entry doesn't exist or nothing at all
 
-    CALL_OR_DIE(HT_CloseIndex(ht_pointer));
-    BF_Close();
+    HT_CloseIndex(ht_pointer);
     return 0;
 }
