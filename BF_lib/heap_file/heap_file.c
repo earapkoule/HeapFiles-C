@@ -41,18 +41,18 @@ int HP_CreateFile(char *fileName, char attrType, char *attrName, int attrLength)
 
 HP_info* HP_OpenFile(char *fileName) {
   char *block;
-  HP_info *header_info = malloc(sizeof(HP_info));
 
+  HP_info *header_info = malloc(sizeof(HP_info));
   int fileDesc = BF_OpenFile(fileName); // Opening existing file
   CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void**) &block));
-  if ( strcmp(block[0], '%') ) { // Check if it is a HeapFile
+  if ( block[0] != '%' ) { // Check if it is a HeapFile
     free(header_info); // Free memory in case the file does not open
     return NULL;
   } else {
     header_info->fileDesc = fileDesc;
-    memcpy(header_info->attrType, block + 1, 1); 
-    memcpy(header_info->attrLength, block + 2, sizeof(int));
-    memcpy(header_info->attrName, block + (2 + sizeof(int)), header_info->attrLength);
+    memcpy(&header_info->attrType, block + 1, 1);
+    memcpy(&header_info->attrLength, block + 2, sizeof(int));
+    memcpy(&header_info->attrName, block + (2 + sizeof(int)), header_info->attrLength);
   }
   return header_info;
 }
@@ -93,7 +93,7 @@ int HP_InsertEntry(HP_info header_info, Record record) {
     if (num_of_records < MAX_RECORDS) { // There is space for a record in the same block
       num_of_records += 1;
       memcpy(block, &num_of_records, sizeof(int)); // Increase the number of records
-      memcpy(block + sizeof(int) + (num_of_records * sizeof(Record)), &record, sizeof(Record)); // Add the new record
+      memcpy(block + sizeof(int) + ((num_of_records - 1) * sizeof(Record)), &record, sizeof(Record)); // Add the new record
     } else { // There is not enough space for a record in this block
       CALL_BF(BF_AllocateBlock(fileDesc)); // Allocate a new block
       num_of_blocks = BF_GetBlockCounter(fileDesc);
@@ -102,6 +102,7 @@ int HP_InsertEntry(HP_info header_info, Record record) {
       num_of_records = 1;
       memcpy(block, &num_of_records, sizeof(int));
       memcpy(block + sizeof(int), &record, sizeof(Record));
+
     }
     CALL_BF(BF_WriteBlock(fileDesc, num_of_blocks - 1));
   }
@@ -129,7 +130,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
       }
     }
-  } else if ( !strcmp(header_info.attrName, "id") ) {
+  } else if ( !strcmp(&header_info.attrName, "id") ) {
     int_value = (int*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
@@ -141,7 +142,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         }
       }
     }
-  } else if ( !strcmp(header_info.attrName, "name") ) {
+  } else if ( !strcmp(&header_info.attrName, "name") ) {
     value = (char*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));
@@ -153,7 +154,7 @@ int HP_GetAllEntries(HP_info header_info, void *value) {
         }
       }
     }
-  } else if ( !strcmp(header_info.attrName, "surname") ) {
+  } else if ( !strcmp(&header_info.attrName, "surname") ) {
     value = (char*) value;
     for ( int index = 1; index < num_of_blocks; index++ ) {
       CALL_BF(BF_ReadBlock(fileDesc, index, (void**) &block));

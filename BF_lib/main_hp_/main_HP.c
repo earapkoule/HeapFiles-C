@@ -55,11 +55,10 @@ int main(int argc, char **argv)
     char filename[5];
     HP_info *hp_pointer;
     strcpy(filename, FILENAME);
-
     HP_CreateFile(filename, 'c', "id", strlen("id"));
     hp_pointer = HP_OpenFile(filename);
     Record record;
-    srand(12569874);
+    srand(12569890);
     int r;
     printf("Insert Entries\n");
     for (int id = 0; id < RECORDS_NUM; ++id)
@@ -80,7 +79,7 @@ int main(int argc, char **argv)
     HP_GetAllEntries(*hp_pointer,NULL);
 
     // printf("Delete Entry with id = %d\n", id);
-    //CALL_OR_DIE(HP_DeleteEntry(indexDesc, id));
+    // HP_DeleteEntry(indexDesc, id);
     printf("Print Entry with id = %d\n", id);
     HP_GetAllEntries(*hp_pointer,&id); // must print something like : Entry doesn't exist or nothing at all
 
