@@ -14,7 +14,7 @@ int HP_CreateFile(
 	char *fileName, /* όνομα αρχείου */
 	char attrType,	/* τύπος πεδίου-κλειδιού: 'c', 'i' */
 	char *attrName, /* όνομα πεδίου-κλειδιού */
-	int attrLength,	/* μήκος πεδίου-κλειδιού */
+	int attrLength	/* μήκος πεδίου-κλειδιού */
 	);
 
 HP_info* HP_OpenFile(

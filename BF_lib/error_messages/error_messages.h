@@ -6,9 +6,9 @@
 #define OK 0
 #define ERROR -1
 
-#define CALL_BF(call)       					\
-{                           					\
-  if (call < BFE_OK) {     						\
+#define CALL_BF(call)                           \
+{                                               \
+  if(call < BFE_OK){     						\
     if(BF_Errno == BFE_NOMEM) {					\
 	    BF_PrintError(							\
 	    	"NOMEM"								\
