@@ -62,26 +62,22 @@ int main(int argc, char **argv)
 
     HT_CreateIndex(filename, 'c', "id", strlen("id"), BUCKETS_NUM);
     ht_pointer = HT_OpenIndex(filename);
+    
     Record record;
     srand(12569874);
     int r;
     printf("Insert Entries\n");fflush(stdin);
     for (int id = 0; id < RECORDS_NUM; ++id)
-    {printf("Insert Entries1\n");fflush(stdin);
+    {
         record.id = id;
-        printf("Insert Entries2\n");fflush(stdin);
         r = rand() % 12;
-        printf("Insert Entries3\n");fflush(stdin);
         memcpy(record.name, names[r], strlen(names[r]) + 1);
-        printf("Insert Entries4\n");fflush(stdin);
         r = rand() % 12;
-        printf("Insert Entries5\n");fflush(stdin);
         memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
-        printf("Insert Entries6\n");fflush(stdin);
         r = rand() % 10;
-        printf("Insert Entries7\n");fflush(stdin);
         memcpy(record.address, addresses[r], strlen(addresses[r]) + 1);
 printf("Insert Entries8\n");fflush(stdin);
+// printf("%d,%c,%d,%s\n",ht_pointer->fileDesc, ht_pointer->attrType, ht_pointer->attrLength, &ht_pointer->attrName);
         HT_InsertEntry(*ht_pointer, record);
         printf("Insert Entries9\n");fflush(stdin);
     }

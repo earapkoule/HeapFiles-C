@@ -61,7 +61,7 @@ HT_info *HT_OpenIndex(char *fileName)
     
     int fileDesc = BF_OpenFile(fileName); // Opening existing file
     CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void **)&block));
-    if (block[0] == '$')
+    if (block[0] != '$')
     {                      // Check if it is a HashTable
         return NULL;
     }
