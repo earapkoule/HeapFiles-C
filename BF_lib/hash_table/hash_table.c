@@ -88,7 +88,6 @@ int HT_CloseIndex(HT_info *header_info)
 
 int HT_InsertEntry(HT_info header_info, Record record)
 {
-    printf("inInsert\n");fflush(stdin);
     char *hash_info_block;
     int num_of_records;
     int fileDesc = header_info.fileDesc;
@@ -124,24 +123,24 @@ int HT_InsertEntry(HT_info header_info, Record record)
     {
         int currentBlock=hash_block[hash_bucket_num];
         CALL_BF(BF_ReadBlock(fileDesc, hash_block[hash_bucket_num], (void**) &block_of_records));
-        int block_num = block_of_records[1];
-        printf("%d size of int ",block_num);
+        int block_num = block_of_records[sizeof(int)];
 
         while (block_num != -1)
         {
             CALL_BF(BF_ReadBlock(fileDesc, block_num, (void**) &block_of_records));
             currentBlock=block_num;
-            block_num = block_of_records[1];
+            block_num = block_of_records[sizeof(int)];
         }
 
         int max_records_in_block = (BLOCK_SIZE - (2 * sizeof(int))) / sizeof(Record);
         int records_num = block_of_records[0];
+        
         if (records_num == max_records_in_block)
         {
-            int numberOfAllBlocks = BF_GetBlockCounter(fileDesc)-1;
+            int numberOfAllBlocks = BF_GetBlockCounter(fileDesc);
 
             memcpy(block_of_records + sizeof(int), &numberOfAllBlocks, sizeof(int));
-            CALL_BF(BF_WriteBlock(fileDesc, block_num));
+            CALL_BF(BF_WriteBlock(fileDesc, currentBlock));
 
             CALL_BF(BF_AllocateBlock(fileDesc));
             CALL_BF(BF_ReadBlock(fileDesc, (BF_GetBlockCounter(fileDesc)-1), (void**) &block_of_records));
@@ -158,7 +157,7 @@ int HT_InsertEntry(HT_info header_info, Record record)
         {
             int numRecords = block_of_records[0] + 1;
             memcpy(block_of_records, &numRecords, sizeof(int));
-            memcpy(block_of_records+(2*sizeof(int))+((num_of_records-1)*sizeof(Record)), &record, sizeof(Record));
+            memcpy(block_of_records+(2*sizeof(int))+((numRecords-1)*sizeof(Record)), &record, sizeof(Record));
 
             CALL_BF(BF_WriteBlock(fileDesc, currentBlock));
         }
@@ -187,7 +186,7 @@ int HT_GetAllEntries(HT_info header_info, void *value)
     int num_of_blocks = BF_GetBlockCounter(fileDesc);
 
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
-    buckets = block[5];
+    buckets = header_info.numBuckets;
     int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
 
     if (value == NULL)
@@ -196,7 +195,7 @@ int HT_GetAllEntries(HT_info header_info, void *value)
         {
             CALL_BF(BF_ReadBlock(fileDesc, index, (void **)&block));
             memcpy(&num_of_records, block, sizeof(int));
-            record = (Record *)(block + sizeof(int));
+            record = (Record *)(block + 2*sizeof(int));
             for (int i = 0; i < num_of_records; i++)
             {
                 printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
@@ -210,16 +209,28 @@ int HT_GetAllEntries(HT_info header_info, void *value)
         int hash_value = *int_value % buckets;
         int hash_block_num = (hash_value / 128) + 1;
         int hash_bucket_num = hash_value % 128;
-        CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **)&block));
-        memcpy(&num_of_records, block, sizeof(int));
-        record = (Record *)(block + 4);
-        for (int i = 0; i < num_of_records; i++)
-        {
-            if (record[i].id == *int_value)
+        CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **) &block));
+
+        while(1) {
+
+            int num_of_records_in_block = block[0];
+
+            for (int i = 0; i < num_of_records_in_block; i++)
             {
-                printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
+                record = (Record *)(block + 2*sizeof(int) + (i*sizeof(Record)));
+                if ((record->id) == *int_value)
+                {
+                    printf("Id: %d Name: %s Surname: %s Address: %s\n", record->id, record->name, record->surname, record->address);
+                    return OK;
+                }
             }
+            if(block[sizeof(int)] == -1) {
+                printf("Not found.");
+                return OK;
+            }
+            CALL_BF(BF_ReadBlock(fileDesc, block[sizeof(int)], (void **) &block));
         }
+
     }
     return OK;
 }

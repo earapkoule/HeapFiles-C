@@ -76,18 +76,15 @@ int main(int argc, char **argv)
         memcpy(record.surname, surnames[r], strlen(surnames[r]) + 1);
         r = rand() % 10;
         memcpy(record.address, addresses[r], strlen(addresses[r]) + 1);
-printf("Insert Entries8\n");fflush(stdin);
-// printf("%d,%c,%d,%s\n",ht_pointer->fileDesc, ht_pointer->attrType, ht_pointer->attrLength, &ht_pointer->attrName);
         HT_InsertEntry(*ht_pointer, record);
-        printf("Insert Entries9\n");fflush(stdin);
     }
 
     printf("RUN PrintAllEntries\n");
     int id = rand() % RECORDS_NUM;
     HT_GetAllEntries(*ht_pointer,NULL);
 
-    printf("Delete Entry with id = %d\n", id);
-    //CALL_OR_DIE(HT_DeleteEntry(indexDesc, id));
+    // printf("Delete Entry with id = %d\n", id);
+    // HT_DeleteEntry(indexDesc, id);
     printf("Print Entry with id = %d\n", id);
     HT_GetAllEntries(*ht_pointer,&id); // must print something like : Entry doesn't exist or nothing at all
 
