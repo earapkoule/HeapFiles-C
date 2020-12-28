@@ -87,59 +87,50 @@ int HT_CloseIndex(HT_info *header_info)
 }
 
 int HT_InsertEntry(HT_info header_info, Record record)
-{printf("inInsert\n");fflush(stdin);
+{
+    printf("inInsert\n");fflush(stdin);
     char *hash_info_block;
     int num_of_records;
-    printf("1\n");fflush(stdin);
     int fileDesc = header_info.fileDesc;
-    printf("2\n");fflush(stdin);
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block));
-    printf("3\n");fflush(stdin);
-    int buckets = hash_info_block[4];
+    int buckets = header_info.numBuckets;
 
     int hash_value = record.id % buckets;
-    int hash_block_num = (hash_value / 128) + 2;
+    int hash_block_num = (hash_value / 128) + 1;//first block is used for metadata storing
     int hash_bucket_num = hash_value % 128;
 
     char *hash_block;
-    printf("4\n");fflush(stdin);
     CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void**) &hash_block));
-    printf("5\n");fflush(stdin);
     int records_num;
 
     char *block_of_records;
     if (hash_block[hash_bucket_num] == -1)
     {
-        printf("6\n");fflush(stdin);
-        int blocks_num;
-        blocks_num = BF_GetBlockCounter(fileDesc);
-        printf("7\n");fflush(stdin);
         CALL_BF(BF_AllocateBlock(fileDesc));
-        printf("8\n");fflush(stdin);
-        CALL_BF(BF_ReadBlock(fileDesc, blocks_num+1, (void**) &block_of_records));
-        printf("9\n");fflush(stdin);
+        CALL_BF(BF_ReadBlock(fileDesc, BF_GetBlockCounter(fileDesc)-1, (void**) &block_of_records));
         records_num = 1;
         memcpy(block_of_records, &records_num, sizeof(int));
-        block_of_records = block_of_records + 1;
         int next_block = -1;
-        memcpy(block_of_records, &next_block, sizeof(int)); /*setting the last 4bytes to -1, to indicate that there is no next block*/
-        block_of_records = block_of_records + 1;
-        memcpy(block_of_records, &record, sizeof(Record));
+        memcpy(block_of_records+sizeof(int), &next_block, sizeof(int)); /*setting the last 4bytes to -1, to indicate that there is no next block*/
+        memcpy(block_of_records+(2*sizeof(int)), &record, sizeof(Record));
 
-        blocks_num = BF_GetBlockCounter(fileDesc);
-        hash_block[hash_bucket_num] = blocks_num - 1;
+        int blocks_num = BF_GetBlockCounter(fileDesc)-1;
+        hash_block[hash_bucket_num] = blocks_num ;
 
         CALL_BF(BF_WriteBlock(fileDesc, blocks_num));
         CALL_BF(BF_WriteBlock(fileDesc, hash_block_num));
     }
     else
     {
+        int currentBlock=hash_block[hash_bucket_num];
         CALL_BF(BF_ReadBlock(fileDesc, hash_block[hash_bucket_num], (void**) &block_of_records));
         int block_num = block_of_records[1];
+        printf("%d size of int ",block_num);
 
         while (block_num != -1)
         {
             CALL_BF(BF_ReadBlock(fileDesc, block_num, (void**) &block_of_records));
+            currentBlock=block_num;
             block_num = block_of_records[1];
         }
 
@@ -147,13 +138,13 @@ int HT_InsertEntry(HT_info header_info, Record record)
         int records_num = block_of_records[0];
         if (records_num == max_records_in_block)
         {
-            int blocks_num = BF_GetBlockCounter(fileDesc);
+            int numberOfAllBlocks = BF_GetBlockCounter(fileDesc)-1;
 
-            memcpy(block_of_records + sizeof(int), &blocks_num, sizeof(int));
+            memcpy(block_of_records + sizeof(int), &numberOfAllBlocks, sizeof(int));
             CALL_BF(BF_WriteBlock(fileDesc, block_num));
 
             CALL_BF(BF_AllocateBlock(fileDesc));
-            CALL_BF(BF_ReadBlock(fileDesc, block_num+1, (void**) &block_of_records));
+            CALL_BF(BF_ReadBlock(fileDesc, (BF_GetBlockCounter(fileDesc)-1), (void**) &block_of_records));
             int one=1;
             int minus=-1;
             memcpy(block_of_records, &one, sizeof(int));
@@ -161,22 +152,20 @@ int HT_InsertEntry(HT_info header_info, Record record)
 
             memcpy(block_of_records+(2*sizeof(int)), &record, sizeof(Record));
 
-            CALL_BF(BF_WriteBlock(fileDesc, block_num+1));
+            CALL_BF(BF_WriteBlock(fileDesc, (BF_GetBlockCounter(fileDesc)-1)));
         }
         else
         {
-            int one = block_of_records[0] + 1;
-            memcpy(block_of_records, &one, sizeof(int));
-            block_of_records = block_of_records + (2 * sizeof(int));
-            block_of_records = (int *)((Record *)(block_of_records) + records_num);
-            memcpy(block_of_records, &record, sizeof(Record));
+            int numRecords = block_of_records[0] + 1;
+            memcpy(block_of_records, &numRecords, sizeof(int));
+            memcpy(block_of_records+(2*sizeof(int))+((num_of_records-1)*sizeof(Record)), &record, sizeof(Record));
 
-            CALL_BF(BF_WriteBlock(fileDesc, block_num));
+            CALL_BF(BF_WriteBlock(fileDesc, currentBlock));
         }
     }
 
 
-    CALL_BF(BF_WriteBlock(fileDesc, hash_block_num));
+    //CALL_BF(BF_WriteBlock(fileDesc, hash_block_num));
 
     return OK;
 }
