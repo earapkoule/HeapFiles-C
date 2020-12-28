@@ -33,7 +33,8 @@ int HT_CreateIndex(char *fileName, char attrType, char *attrName, int attrLength
     memcpy(block + 1, &attrType, sizeof(char));
     memcpy(block + 2, &attrLength, sizeof(int));
     memcpy(block + (2 + sizeof(int)), attrName, attrLength + 1);
-    memcpy(block + (2 + sizeof(int)) + (attrLength + 1), buckets, sizeof(int));
+    memcpy(block + (2 + sizeof(int)) + (attrLength + 1), &buckets, sizeof(int));
+
     CALL_BF(BF_WriteBlock(fileDesc, 0));
 
     int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
@@ -42,76 +43,81 @@ int HT_CreateIndex(char *fileName, char attrType, char *attrName, int attrLength
     for (int i = 0; i < num_hash_blocks; i++)
     {
         CALL_BF(BF_AllocateBlock(fileDesc));
-        CALL_BF(BF_ReadBlock(fileDesc, num_hash_blocks + 1, (void **)&hash_block));
-        for (i = 0; i < BLOCK_SIZE / sizeof(int); i++)
+        CALL_BF(BF_ReadBlock(fileDesc, i + 1, (void **) &hash_block));
+        for (int j = 0; j < BLOCK_SIZE / sizeof(int); j++)
         {
-            memcpy(hash_block + (i * sizeof(int)), -1, sizeof(int));
+            int minus = -1;
+            memcpy(hash_block + (j * sizeof(int)), &minus, sizeof(int));
         }
-        CALL_BF(BF_WriteBlock(fileDesc, hash_block));
+        CALL_BF(BF_WriteBlock(fileDesc, i + 1));
     }
     CALL_BF(BF_CloseFile(fileDesc));
-
     return OK;
 }
 
 HT_info *HT_OpenIndex(char *fileName)
 {
     char *block;
-    HT_info *header_info = malloc(sizeof(HT_info));
-
+    
     int fileDesc = BF_OpenFile(fileName); // Opening existing file
     CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void **)&block));
-    if (strcmp(block[0], '$'))
-    {                      // Check if it is a HeapFile
-        free(header_info); // Free memory in case the file does not open
+    if (block[0] == '$')
+    {                      // Check if it is a HashTable
         return NULL;
     }
-    else
-    {
-        header_info->fileDesc = fileDesc;
-        memcpy(header_info->attrType, block + 1, 1);
-        memcpy(header_info->attrLength, block + 2, sizeof(int));
-        memcpy(header_info->attrName, block + (2 + sizeof(int)), header_info->attrLength);
-        memcpy(header_info->numBuckets, block + (2 + sizeof(int)) + (header_info->attrLength + 1), sizeof(int));
-    }
+    HT_info *header_info = malloc(sizeof(HT_info));
+    header_info->fileDesc = fileDesc;
+    memcpy(&(header_info->attrType), block + 1, 1);
+    memcpy(&(header_info->attrLength), block + 2, sizeof(int));
+
+    header_info->attrName = malloc(header_info->attrLength + 1);
+
+    memcpy(header_info->attrName, block + (2 + sizeof(int)), (header_info->attrLength + 1));
+    memcpy(&(header_info->numBuckets), block + (2 + sizeof(int)) + (header_info->attrLength + 1), sizeof(int));
+
     return header_info;
 }
 
 int HT_CloseIndex(HT_info *header_info)
 {
     CALL_BF(BF_CloseFile(header_info->fileDesc));
+    free(header_info->attrName);
     free(header_info); // Free memory before closing the file
     return OK;
 }
 
 int HT_InsertEntry(HT_info header_info, Record record)
-{
+{printf("inInsert\n");fflush(stdin);
     char *hash_info_block;
     int num_of_records;
-
+    printf("1\n");fflush(stdin);
     int fileDesc = header_info.fileDesc;
+    printf("2\n");fflush(stdin);
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block));
+    printf("3\n");fflush(stdin);
     int buckets = hash_info_block[4];
-
 
     int hash_value = record.id % buckets;
     int hash_block_num = (hash_value / 128) + 2;
     int hash_bucket_num = hash_value % 128;
 
     char *hash_block;
-
+    printf("4\n");fflush(stdin);
     CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void**) &hash_block));
-
+    printf("5\n");fflush(stdin);
     int records_num;
 
     char *block_of_records;
     if (hash_block[hash_bucket_num] == -1)
     {
+        printf("6\n");fflush(stdin);
         int blocks_num;
         blocks_num = BF_GetBlockCounter(fileDesc);
+        printf("7\n");fflush(stdin);
         CALL_BF(BF_AllocateBlock(fileDesc));
+        printf("8\n");fflush(stdin);
         CALL_BF(BF_ReadBlock(fileDesc, blocks_num+1, (void**) &block_of_records));
-
+        printf("9\n");fflush(stdin);
         records_num = 1;
         memcpy(block_of_records, &records_num, sizeof(int));
         block_of_records = block_of_records + 1;
