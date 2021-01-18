@@ -219,39 +219,39 @@ int HashStatistics(char* filename) {
 	return OK;
 }
 
-int FindBlockIdOfHashTable(HT_info header_info, int *value) {
-    char *block;
-    int num_of_records;
-    int buckets;
-    Record *record;
+// int FindBlockIdOfHashTable(HT_info header_info, int *value) {
+//     char *block;
+//     int num_of_records;
+//     int buckets;
+//     Record *record;
 
-    int fileDesc = header_info.fileDesc;
-    int num_of_blocks = BF_GetBlockCounter(fileDesc);
+//     int fileDesc = header_info.fileDesc;
+//     int num_of_blocks = BF_GetBlockCounter(fileDesc);
 
-    CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
-    buckets = header_info.numBuckets;
-    int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
+//     CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
+//     buckets = header_info.numBuckets;
+//     int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
 
-    int hash_value = *value % buckets;
-    int hash_block_num = (hash_value / 128) + 1;
-    int hash_bucket_num = hash_value % 128;
-    CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **) &block));
+//     int hash_value = *value % buckets;
+//     int hash_block_num = (hash_value / 128) + 1;
+//     int hash_bucket_num = hash_value % 128;
+//     CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **) &block));
 
-    while(1) {
+//     while(1) {
 
-        int num_of_records_in_block = block[0];
+//         int num_of_records_in_block = block[0];
 
-        for (int i = 0; i < num_of_records_in_block; i++) {
-            record = (Record *)(block + 2*sizeof(int) + (i*sizeof(Record)));
-            if ((record->id) == *value) {
-                return block[sizeof(int)];
-            }
-        }
-        if(block[sizeof(int)] == -1) {
-            return -1;
-        }
-        CALL_BF(BF_ReadBlock(fileDesc, block[sizeof(int)], (void **) &block));
-    }
+//         for (int i = 0; i < num_of_records_in_block; i++) {
+//             record = (Record *)(block + 2*sizeof(int) + (i*sizeof(Record)));
+//             if ((record->id) == *value) {
+//                 return block[sizeof(int)];
+//             }
+//         }
+//         if(block[sizeof(int)] == -1) {
+//             return -1;
+//         }
+//         CALL_BF(BF_ReadBlock(fileDesc, block[sizeof(int)], (void **) &block));
+//     }
 
-    return -1;
-}
+//     return -1;
+// }
