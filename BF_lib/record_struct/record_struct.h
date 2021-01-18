@@ -8,4 +8,9 @@ typedef struct Record {
 	char address[50];
 } Record;
 
+typedef struct SecondaryRecord {
+	Record record;
+	int blockId;	// To block στο οποίο έγινε η εεισαγωγή της εγγραφής στο πρωτεύον ευρετήριο
+} SecondaryRecord;
+
 #endif // RECORD_STRUCT_H
