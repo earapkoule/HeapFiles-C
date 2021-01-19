@@ -106,7 +106,7 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
     int records_num;
 
     char *block_of_records;
-    
+
 	SHTRecord sht_record;
 	sht_record.blockId = record.blockId;
 	memcpy(&(sht_record.surname), &(record.record.surname), 25 * sizeof(char));
@@ -167,56 +167,58 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
 }
 
 int SHT_SecondaryGetAllEntries(SHT_info header_info_sht, HT_info header_info_ht, void *value) {
-	// char *block;
- //    int num_of_records;
- //    int buckets;
- //    Record *record;
+    if (value == NULL) {
+        return HT_GetAllEntries(header_info_ht, NULL);
+    } else {
+    	char *block;
+    	SHTRecord *sht_record;
 
- //    int *int_value;
- //    char *char_value;
- //    int fileDesc = header_info.fileDesc;
- //    int num_of_blocks = BF_GetBlockCounter(fileDesc);
+        char *char_value = (char *)value;
 
- //    CALL_BF(BF_ReadBlock(fileDesc, 0, (void **)&block));
- //    buckets = header_info.numBuckets;
- //    int num_hash_blocks = (buckets % 128 == 0) ? (buckets / 128) : ((buckets / 128) + 1);
+        int fileDesc_sht = header_info_sht.fileDesc;
+		int buckets_sht = header_info_sht.numBuckets;
 
- //    if (value == NULL) {
- //        for (int index = num_hash_blocks + 1; index < num_of_blocks; index++)
- //        {
- //            CALL_BF(BF_ReadBlock(fileDesc, index, (void **)&block));
- //            memcpy(&num_of_records, block, sizeof(int));
- //            record = (Record *)(block + 2*sizeof(int));
- //            for (int i = 0; i < num_of_records; i++)
- //            {
- //                printf("Id: %d Name: %s Surname: %s Address: %s\n", record[i].id, record[i].name, record[i].surname, record[i].address);
- //            }
- //        }
- //    } else {
- //        int_value = (int *)value;
+        int hash_value_sht = strlen(char_value) % buckets_sht;
+        int hash_block_num_sht = (hash_value_sht / MAX_BUCKETS) + 1;
 
- //        int hash_value = *int_value % buckets;
- //        int hash_block_num = (hash_value / 128) + 1;
- //        int hash_bucket_num = hash_value % 128;
- //        CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **) &block));
+        CALL_BF(BF_ReadBlock(fileDesc_sht, hash_block_num_sht, (void **) &block));
 
- //        while(1) {
- //            int num_of_records_in_block = block[0];
- //            for (int i = 0; i < num_of_records_in_block; i++) {
- //                record = (Record *)(block + 2*sizeof(int) + (i*sizeof(Record)));
- //                if ((record->id) == *int_value) {
- //                    printf("Id: %d Name: %s Surname: %s Address: %s\n", record->id, record->name, record->surname, record->address);
- //                    return OK;
- //                }
- //            }
- //            if(block[sizeof(int)] == -1) {
- //                printf("Not found.");
- //                return OK;
- //            }
- //            CALL_BF(BF_ReadBlock(fileDesc, block[sizeof(int)], (void **) &block));
- //        }
- //    }
- //    return OK;
+        while(1) {
+            int num_of_records_in_block = block[0];
+            for (int i = 0; i < num_of_records_in_block; i++) {
+                sht_record = (SHTRecord *)(block + 2*sizeof(int) + (i*sizeof(SHTRecord)));
+                
+                if (strcmp(&(sht_record->surname), char_value) == 0) {
+                	char *block_ht;
+                	Record *record;
+
+                	int fileDesc_ht = header_info_ht.fileDesc;
+                	CALL_BF(BF_ReadBlock(fileDesc_ht, sht_record->blockId, (void **) &block_ht));
+                	int num_of_records_in_block_ht = block_ht[0];
+
+                	int index_ht;
+                	for(index_ht = 0; index_ht < num_of_records_in_block_ht; index_ht++) {
+                		record = (Record *)(block + 2*sizeof(int) + (index_ht*sizeof(Record)));
+
+                		if(strcmp(&(record->surname), char_value) == 0) {
+                			printf("Id: %d Name: %s Surname: %s Address: %s\n", record->id, record->name, record->surname, record->address);
+	                    	return OK;
+                		}
+                	}
+                	if (index_ht == num_of_records_in_block_ht) {
+		                printf("This blockId does not contain the asked surname.");
+		                return OK;
+		            }
+                }
+            }
+            if (block[sizeof(int)] == -1) {
+                printf("Not found.");
+                return OK;
+            }
+            CALL_BF(BF_ReadBlock(fileDesc_sht, block[sizeof(int)], (void **) &block));
+        }
+    }
+    return OK;
 }
 
 int HashStatistics(char* filename) {
