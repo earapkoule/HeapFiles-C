@@ -8,6 +8,8 @@
 #include "record_struct.h"
 #include "error_messages.h"
 
+#define MAX_BUCKETS BLOCK_SIZE / sizeof(int)
+
 /* The first block of a secondary hash table looks like this:
  * --------------------------------------------------
  * | & | attrLength | attrName | \0 | numBuckets | fileName | \0 | 0 | 0 | ... |
@@ -38,14 +40,13 @@ int SHT_CreateSecondaryIndex(char *sfileName, char* attrName, int attrLength, in
 
     CALL_BF(BF_WriteBlock(fileDesc, 0));
 
-    int max_num_buckets_in_block = BLOCK_SIZE / sizeof(int);
-    int num_hash_blocks = (buckets % max_num_buckets_in_block == 0) ? (buckets / max_num_buckets_in_block) : ((buckets / max_num_buckets_in_block) + 1);
+    int num_hash_blocks = (buckets % MAX_BUCKETS == 0) ? (buckets / MAX_BUCKETS) : ((buckets / MAX_BUCKETS) + 1);
 
     char *sec_hash_block;
     for (int i = 0; i < num_hash_blocks; i++) {
         CALL_BF(BF_AllocateBlock(fileDesc));
         CALL_BF(BF_ReadBlock(fileDesc, i + 1, (void **) &sec_hash_block));
-        for (int j = 0; j < max_num_buckets_in_block; j++)
+        for (int j = 0; j < MAX_BUCKETS; j++)
         {
             int minus = -1;
             memcpy(sec_hash_block + (j * sizeof(int)), &minus, sizeof(int));
@@ -95,17 +96,20 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block));
     int buckets = header_info.numBuckets;
 
-    int hash_value = record.id % buckets;
-    int hash_block_num = (hash_value / 128) + 1; // first block is used for metadata storing
-    int hash_bucket_num = hash_value % 128;
+    char *surname = record.record.surname;
+    int hash_value = strlen(surname) % buckets;
+    int hash_block_num = (hash_value / MAX_BUCKETS) + 1; // first block is used for metadata storing
+    int hash_bucket_num = hash_value % MAX_BUCKETS;
 
     char *hash_block;
     CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void**) &hash_block));
     int records_num;
 
     char *block_of_records;
-
-    // HT_info *ht_header_info = HT_OpenIndex(header_info.filename);
+    
+	SHTRecord sht_record;
+	sht_record.blockId = record.blockId;
+	memcpy(&(sht_record.surname), &(record.record.surname), 25 * sizeof(char));
 
     if (hash_block[hash_bucket_num] == -1) {
         CALL_BF(BF_AllocateBlock(fileDesc));
@@ -113,8 +117,8 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
         records_num = 1;
         memcpy(block_of_records, &records_num, sizeof(int));
         int next_block = -1;
-        memcpy(block_of_records+sizeof(int), &next_block, sizeof(int)); // setting the last sizeof(int) bytes to -1, to indicate that there is no next block
-        memcpy(block_of_records+(2*sizeof(int)), &record, sizeof(SecondaryRecord));
+        memcpy(block_of_records + sizeof(int), &next_block, sizeof(int)); // setting the last sizeof(int) bytes to -1, to indicate that there is no next block
+        memcpy(block_of_records + (2*sizeof(int)), &sht_record, sizeof(SHTRecord));
 
         int blocks_num = BF_GetBlockCounter(fileDesc)-1;
         hash_block[hash_bucket_num] = blocks_num ;
@@ -128,11 +132,11 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
 
         while (block_num != -1) {
             CALL_BF(BF_ReadBlock(fileDesc, block_num, (void**) &block_of_records));
-            currentBlock=block_num;
+            currentBlock = block_num;
             block_num = block_of_records[sizeof(int)];
         }
 
-        int max_records_in_block = (BLOCK_SIZE - (2 * sizeof(int))) / sizeof(SecondaryRecord);
+        int max_records_in_block = (BLOCK_SIZE - (2 * sizeof(int))) / sizeof(SHTRecord);
         int records_num = block_of_records[0];
         
         if (records_num == max_records_in_block) {
@@ -148,13 +152,13 @@ int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
             memcpy(block_of_records, &one, sizeof(int));
             memcpy(block_of_records+sizeof(int), &minus, sizeof(int));
 
-            memcpy(block_of_records+(2*sizeof(int)), &record, sizeof(SecondaryRecord));
+            memcpy(block_of_records+(2*sizeof(int)), &sht_record, sizeof(SHTRecord));
 
             CALL_BF(BF_WriteBlock(fileDesc, (BF_GetBlockCounter(fileDesc)-1)));
         } else {
             int numRecords = block_of_records[0] + 1;
             memcpy(block_of_records, &numRecords, sizeof(int));
-            memcpy(block_of_records+(2*sizeof(int))+((numRecords-1)*sizeof(SecondaryRecord)), &record, sizeof(SecondaryRecord));
+            memcpy(block_of_records+(2*sizeof(int))+((numRecords-1)*sizeof(SHTRecord)), &sht_record, sizeof(SHTRecord));
 
             CALL_BF(BF_WriteBlock(fileDesc, currentBlock));
         }

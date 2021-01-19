@@ -13,4 +13,9 @@ typedef struct SecondaryRecord {
 	int blockId;	// To block στο οποίο έγινε η εεισαγωγή της εγγραφής στο πρωτεύον ευρετήριο
 } SecondaryRecord;
 
+typedef struct SHTRecord {
+	char surname[25];
+	int blockId;
+} SHTRecord;
+
 #endif // RECORD_STRUCT_H
