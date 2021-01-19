@@ -2,42 +2,32 @@ CFLAGS = -Wall BF_64.a -no-pie
 
 ODIR = ./obj
 
-_DEPS = hash_table heap_file error_messages record_struct
+_DEPS = hash_table sec_hash_table error_messages record_struct
 DEPS := $(foreach D,$(_DEPS),./$D/$D.h) ./BF.h
 INCLUDE_HEADERS = $(patsubst %,-I ./%,$(_DEPS)) -I ./
 
-_HP_OBJS = main_HP heap_file
+_HP_OBJS = main_SHT sec_hash_table hash_table
 HP_OBJS = $(patsubst %,$(ODIR)/%.o,$(_HP_OBJS))
 
-_HT_OBJS = main_HT hash_table
-HT_OBJS = $(patsubst %,$(ODIR)/%.o,$(_HT_OBJS))
-
-EXEC = main_hp main_ht
+EXEC = main_sht
 
 # Main executables
 all: $(EXEC)
 
-main_hp: $(HP_OBJS)
-	gcc -o $@ $^ $(CFLAGS)
-	@echo "Executable file \"$@\" created";
-
-main_ht: $(HT_OBJS)
+main_sht: $(HT_OBJS)
 	gcc -o $@ $^ $(CFLAGS)
 	@echo "Executable file \"$@\" created";
 
 # Main programs
-$(ODIR)/main_HP.o: ./main_hp_/main_HP.c $(DEPS) | $(ODIR)
-	gcc -c -o $@ $< $(INCLUDE_HEADERS) $(CFLAGS)
-
-$(ODIR)/main_HT.o: ./main_ht_/main_HT.c $(DEPS) | $(ODIR)
+$(ODIR)/main_SHT.o: ./main_sht_/main_SHT.c $(DEPS) | $(ODIR)
 	gcc -c -o $@ $< $(INCLUDE_HEADERS) $(CFLAGS)
 
 # Utilities & data structures
-$(ODIR)/heap_file.o: ./heap_file/heap_file.c $(DEPS) | $(ODIR)
-	gcc -c -o $@ $< $(INCLUDE_HEADERS) $(CFLAGS)
-$(ODIR)/hash_table.o: ./hash_table/hash_table.c $(DEPS) | $(ODIR)
+$(ODIR)/sec_hash_table.o: ./sec_hash_table/sec_hash_table.c $(DEPS) | $(ODIR)
 	gcc -c -o $@ $< $(INCLUDE_HEADERS) $(CFLAGS)
 
+$(ODIR)/hash_table.o: ./hash_table/hash_table.c $(DEPS) | $(ODIR)
+	gcc -c -o $@ $< $(INCLUDE_HEADERS) $(CFLAGS)
 # Objects directory
 $(ODIR):
 	mkdir -p $@
