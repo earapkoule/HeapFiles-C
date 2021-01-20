@@ -20,13 +20,9 @@ int main(int argc, char **argv)
 	char line[256];
 	char* token = NULL;
    	int len;
-    int bfs[MAX_FILES];
-    int i, j;
     int counterColumn;
     char filename[5];
     char sfilename[5];
-    void *block;
-    int blkCnt;
     HT_info *ht_pointer;
     SHT_info *sht_pointer;
     Record recordTable[5];
@@ -94,13 +90,13 @@ int main(int argc, char **argv)
         {
             printf("PrintingEntries From HashTable\n");
 
-            HT_GetAllEntries(*ht_pointer, recordTable[k].id);
+            HT_GetAllEntries(*ht_pointer,&recordTable[k].id);
         }
         for (int k=0;k<5;k++)
         {
             printf("PrintingEntries From SecondaryHashTable\n");
 
-            SHT_SecondaryGetAllEntries(*sht_pointer,*ht_pointer,recordTable[k].surname);
+            SHT_SecondaryGetAllEntries(*sht_pointer,*ht_pointer,&recordTable[k].surname);
         }
     }
     else
