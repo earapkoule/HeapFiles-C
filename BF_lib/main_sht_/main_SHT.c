@@ -61,14 +61,6 @@ int main(int argc, char **argv)
 				{
 					token[len - 2] = '\0';
 				}
-                if(token[0]=='"')
-                {
-                    token++;
-                }
-                if (token[len - 1] == '"')
-				{
-					token[len - 1] = '\0';
-				}
                 if(counterColumn==0)
                 {
                   tempRecord.record.id=atoi(token);      
