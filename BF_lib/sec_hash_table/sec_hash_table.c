@@ -80,10 +80,10 @@ SHT_info* SHT_OpenSecondaryIndex(char *sfileName) {
 
     memcpy(&(header_info->numBuckets), block + (1 + sizeof(int)) + (header_info->attrLength + 1), sizeof(int));
 
-    int filename_length = strlen(header_info->fileName);
-    header_info->fileName = (char *) malloc(filename_length + 1);
+    int filename_length = 30;
+    header_info->fileName = (char *) malloc(filename_length);
 
-	memcpy(header_info->fileName, block + (1 + sizeof(int)) + (header_info->attrLength + 1) + sizeof(int), (filename_length + 1));
+	memcpy(header_info->fileName, block + (1 + sizeof(int)) + (header_info->attrLength + 1) + sizeof(int), filename_length);
 
     return header_info;
 }

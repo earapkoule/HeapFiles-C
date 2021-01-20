@@ -16,13 +16,14 @@ int main(int argc, char **argv)
 {
     FILE* pf;
     pf = fopen(argv[1], "r");
+    
     const char s[2] = ",";
 	char line[256];
 	char* token = NULL;
    	int len;
     int counterColumn;
     char filename[5];
-    char sfilename[5];
+    char sfilename[6];
     HT_info *ht_pointer;
     SHT_info *sht_pointer;
     Record recordTable[5];
@@ -30,16 +31,16 @@ int main(int argc, char **argv)
     strcpy(filename, FILENAME);
     strcpy(sfilename, SFILENAME);
     SecondaryRecord tempRecord;
-
+    
     HT_CreateIndex(filename, 'c', "id", strlen("id"), BUCKETS_NUM);
     ht_pointer = HT_OpenIndex(filename);
     
     SHT_CreateSecondaryIndex(sfilename,"surname", strlen("surname"), BUCKETS_NUM, filename);
-    sht_pointer=SHT_OpenSecondaryIndex(sfilename);
-
+    sht_pointer = SHT_OpenSecondaryIndex(sfilename);
+    printf("1\n");fflush(stdin);
     if (pf != NULL)
 	{
-        printf("Opening File.");
+        printf("Opening File.\n");
         fflush(stdin);
         while (fgets(line, sizeof(line), pf))
 		{	
@@ -101,8 +102,10 @@ int main(int argc, char **argv)
     }
     else
 	{
-		printf("File doesn't exist.");
+		printf("File doesn't exist.\n");
+        fflush(stdin);
 	}
+    printf("close\n");fflush(stdin);
     HT_CloseIndex(ht_pointer);
     SHT_CloseSecondaryIndex(sht_pointer);
     return 0;
