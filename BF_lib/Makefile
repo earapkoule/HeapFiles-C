@@ -6,8 +6,8 @@ _DEPS = hash_table sec_hash_table error_messages record_struct
 DEPS := $(foreach D,$(_DEPS),./$D/$D.h) ./BF.h
 INCLUDE_HEADERS = $(patsubst %,-I ./%,$(_DEPS)) -I ./
 
-_HP_OBJS = main_SHT sec_hash_table hash_table
-HP_OBJS = $(patsubst %,$(ODIR)/%.o,$(_HP_OBJS))
+_HT_OBJS = main_SHT sec_hash_table hash_table
+HT_OBJS = $(patsubst %,$(ODIR)/%.o,$(_HT_OBJS))
 
 EXEC = main_sht
 
