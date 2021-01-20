@@ -2,6 +2,7 @@
 #define SEC_HASH_TABLE_H
 
 #include "record_struct.h"
+#include "hash_table.h"
 
 typedef struct SHT_info {
 	int fileDesc;	/* αναγνωριστικός αριθμός ανοίγματος αρχείου από το επίπεδο block */
