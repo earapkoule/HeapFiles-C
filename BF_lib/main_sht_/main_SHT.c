@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 {
     FILE* pf;
     pf = fopen(argv[1], "r");
-    const char s[2] = " ";
+    const char s[2] = ",";
 	char line[256];
 	char* token = NULL;
    	int len;
