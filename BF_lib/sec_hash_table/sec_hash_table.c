@@ -74,7 +74,7 @@ SHT_info* SHT_OpenSecondaryIndex(char *sfileName) {
     memcpy(header_info->attrName, block + (1 + sizeof(int)), (header_info->attrLength + 1));
     memcpy(&(header_info->numBuckets), block + (1 + sizeof(int)) + (header_info->attrLength + 1), sizeof(int));
 
-    header_info->fileName = malloc(header_info->fileName + 1);
+    header_info->fileName = malloc(strlen(header_info->fileName) + 1);
 
 	memcpy(header_info->fileName, block + (1 + sizeof(int)) + (header_info->attrLength + 1) + sizeof(int), (header_info->attrLength + 1));
 
@@ -91,7 +91,7 @@ int SHT_CloseSecondaryIndex(SHT_info* header_info) {
 
 int SHT_SecondaryInsertEntry(SHT_info header_info, SecondaryRecord record) {
 	char *hash_info_block;
-    int num_of_records;
+    // int num_of_records;
     int fileDesc = header_info.fileDesc;
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block));
     int buckets = header_info.numBuckets;
@@ -188,7 +188,7 @@ int SHT_SecondaryGetAllEntries(SHT_info header_info_sht, HT_info header_info_ht,
             for (int i = 0; i < num_of_records_in_block; i++) {
                 sht_record = (SHTRecord *)(block + 2*sizeof(int) + (i*sizeof(SHTRecord)));
                 
-                if (strcmp(&(sht_record->surname), char_value) == 0) {
+                if (strcmp(sht_record->surname, char_value) == 0) {
                 	char *block_ht;
                 	Record *record;
 
@@ -200,7 +200,7 @@ int SHT_SecondaryGetAllEntries(SHT_info header_info_sht, HT_info header_info_ht,
                 	for(index_ht = 0; index_ht < num_of_records_in_block_ht; index_ht++) {
                 		record = (Record *)(block + 2*sizeof(int) + (index_ht*sizeof(Record)));
 
-                		if(strcmp(&(record->surname), char_value) == 0) {
+                		if(strcmp(record->surname, char_value) == 0) {
                 			printf("Id: %d Name: %s Surname: %s Address: %s\n", record->id, record->name, record->surname, record->address);
 	                    	return OK;
                 		}
@@ -221,6 +221,6 @@ int SHT_SecondaryGetAllEntries(SHT_info header_info_sht, HT_info header_info_ht,
     return OK;
 }
 
-int HashStatistics(char* filename) {
-	return OK;
-}
+// int HashStatistics(char* filename) {
+// 	return OK;
+// }

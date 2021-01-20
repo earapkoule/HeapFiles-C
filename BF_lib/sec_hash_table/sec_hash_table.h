@@ -39,8 +39,8 @@ int SHT_SecondaryGetAllEntries(
 	void *value	/* τιμή του πεδίου-κλειδιού προς αναζήτηση */
 	);
 
-int HashStatistics(
-	char* filename 	/* όνομα του αρχείου που ενδιαφέρει */
-	);
+// int HashStatistics(
+// 	char* filename 	// όνομα του αρχείου που ενδιαφέρει 
+// 	);
 
 #endif // SEC_HASH_TABLE_H

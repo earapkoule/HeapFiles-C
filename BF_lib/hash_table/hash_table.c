@@ -89,7 +89,7 @@ int HT_CloseIndex(HT_info *header_info)
 int HT_InsertEntry(HT_info header_info, Record record)
 {
     char *hash_info_block;
-    int num_of_records;
+    // int num_of_records;
     int fileDesc = header_info.fileDesc;
     CALL_BF(BF_ReadBlock(fileDesc, 0, (void**) &hash_info_block));
     int buckets = header_info.numBuckets;
@@ -208,7 +208,7 @@ int HT_GetAllEntries(HT_info header_info, void *value)
 
         int hash_value = *int_value % buckets;
         int hash_block_num = (hash_value / 128) + 1;
-        int hash_bucket_num = hash_value % 128;
+        // int hash_bucket_num = hash_value % 128;
         CALL_BF(BF_ReadBlock(fileDesc, hash_block_num, (void **) &block));
 
         while(1) {
