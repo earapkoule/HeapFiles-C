@@ -61,22 +61,29 @@ SHT_info* SHT_OpenSecondaryIndex(char *sfileName) {
 	char *block;
     
     int fileDesc = BF_OpenFile(sfileName); // Opening existing file
+    
     CALL_OR_RETURN_NULL(BF_ReadBlock(fileDesc, 0, (void **)&block));
+    
     if (block[0] != '&') {	// Check if it is a secondary HashTable
         return NULL;
     }
+
     SHT_info *header_info = malloc(sizeof(SHT_info));
+
     header_info->fileDesc = fileDesc;
+
     memcpy(&(header_info->attrLength), block + 1, sizeof(int));
 
-    header_info->attrName = malloc(header_info->attrLength + 1);
+    header_info->attrName = (char *) malloc(header_info->attrLength + 1);
 
     memcpy(header_info->attrName, block + (1 + sizeof(int)), (header_info->attrLength + 1));
+
     memcpy(&(header_info->numBuckets), block + (1 + sizeof(int)) + (header_info->attrLength + 1), sizeof(int));
 
-    header_info->fileName = malloc(strlen(header_info->fileName) + 1);
+    int filename_length = strlen(header_info->fileName);
+    header_info->fileName = (char *) malloc(filename_length + 1);
 
-	memcpy(header_info->fileName, block + (1 + sizeof(int)) + (header_info->attrLength + 1) + sizeof(int), (header_info->attrLength + 1));
+	memcpy(header_info->fileName, block + (1 + sizeof(int)) + (header_info->attrLength + 1) + sizeof(int), (filename_length + 1));
 
     return header_info;
 }
